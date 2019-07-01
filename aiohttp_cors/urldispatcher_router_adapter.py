@@ -209,7 +209,8 @@ class ResourcesUrlDispatcherRouterAdapter(AbstractRouterAdapter):
         return match_info.route
 
     def _request_resource(self, request: web.Request) -> web.Resource:
-        return self._request_route(request).resource
+        resource = self._request_route(request).resource
+        return resource.canonical
 
     def is_preflight_request(self, request: web.Request) -> bool:
         """Is `request` is a CORS preflight request."""
@@ -234,28 +235,28 @@ class ResourcesUrlDispatcherRouterAdapter(AbstractRouterAdapter):
             resource = routing_entity
 
             # Add resource configuration or fail if it's already added.
-            if resource in self._resource_config:
+            if resource.canonical in self._resource_config:
                 raise ValueError(
                     "CORS is already configured for {!r} resource.".format(
                         resource))
 
-            self._resource_config[resource] = _ResourceConfig(
+            self._resource_config[resource.canonical] = _ResourceConfig(
                 default_config=config)
 
         elif isinstance(routing_entity, web.ResourceRoute):
             route = routing_entity
 
             # Add resource's route configuration or fail if it's already added.
-            if route.resource not in self._resource_config:
+            if route.resource.canonical not in self._resource_config:
                 self.set_config_for_routing_entity(route.resource, config)
 
-            if route.resource not in self._resource_config:
+            if route.resource.canonical not in self._resource_config:
                 raise ValueError(
                     "Can't setup CORS for {!r} request, "
                     "CORS must be enabled for route's resource first.".format(
                         route))
 
-            resource_config = self._resource_config[route.resource]
+            resource_config = self._resource_config[route.resource.canonical]
 
             if route.method in resource_config.method_config:
                 raise ValueError(
