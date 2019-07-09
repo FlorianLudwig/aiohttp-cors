@@ -104,6 +104,12 @@ def _is_web_view(entity, strict=True):
     return webview
 
 
+def get_path(resource):
+    if resource is None:
+        return None
+    return resource.canonical
+
+
 class ResourcesUrlDispatcherRouterAdapter(AbstractRouterAdapter):
     """Adapter for `UrlDispatcher` for Resources-based routing only.
 
@@ -210,7 +216,7 @@ class ResourcesUrlDispatcherRouterAdapter(AbstractRouterAdapter):
 
     def _request_resource(self, request: web.Request) -> web.Resource:
         resource = self._request_route(request).resource
-        return resource.canonical
+        return get_path(resource)
 
     def is_preflight_request(self, request: web.Request) -> bool:
         """Is `request` is a CORS preflight request."""
@@ -235,28 +241,28 @@ class ResourcesUrlDispatcherRouterAdapter(AbstractRouterAdapter):
             resource = routing_entity
 
             # Add resource configuration or fail if it's already added.
-            if resource.canonical in self._resource_config:
+            if get_path(resource) in self._resource_config:
                 raise ValueError(
                     "CORS is already configured for {!r} resource.".format(
                         resource))
 
-            self._resource_config[resource.canonical] = _ResourceConfig(
+            self._resource_config[get_path(resource)] = _ResourceConfig(
                 default_config=config)
 
         elif isinstance(routing_entity, web.ResourceRoute):
             route = routing_entity
 
             # Add resource's route configuration or fail if it's already added.
-            if route.resource.canonical not in self._resource_config:
+            if get_path(route.resource) not in self._resource_config:
                 self.set_config_for_routing_entity(route.resource, config)
 
-            if route.resource.canonical not in self._resource_config:
+            if get_path(route.resource) not in self._resource_config:
                 raise ValueError(
                     "Can't setup CORS for {!r} request, "
                     "CORS must be enabled for route's resource first.".format(
                         route))
 
-            resource_config = self._resource_config[route.resource.canonical]
+            resource_config = self._resource_config[get_path(route.resource)]
 
             if route.method in resource_config.method_config:
                 raise ValueError(
